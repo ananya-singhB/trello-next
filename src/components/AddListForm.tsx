@@ -1,0 +1,60 @@
+'use client';
+
+import { useState } from 'react';
+import { supabaseClient } from '@/lib/supabaseClient';
+
+interface Props {
+  boardId: number;
+  onSuccess: () => void;
+}
+
+export default function AddListForm({ boardId, onSuccess }: Props) {
+  const [title, setTitle] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title) return;
+    setLoading(true);
+
+    // Position is count of existing lists
+    const { data: existingLists } = await supabaseClient
+      .from('lists')
+      .select('list_id')
+      .eq('board_id', boardId);
+
+    const position = existingLists?.length || 0;
+
+    const { error } = await supabaseClient.from('lists').insert([{ title, board_id: boardId, position }]);
+    if (error) {
+      alert(error.message);
+    } else {
+      onSuccess();
+    }
+
+    setLoading(false);
+    setTitle('');
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h3 className="text-lg font-semibold">Add New List</h3>
+      <input
+        type="text"
+        placeholder="List title"
+        className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        disabled={loading}
+        required
+      />
+      <button
+        type="submit"
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        disabled={loading}
+      >
+        Add List
+      </button>
+    </form>
+  );
+}
