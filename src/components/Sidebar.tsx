@@ -64,8 +64,8 @@ export default function Sidebar({
               key={board.board_id}
               className={`flex items-center justify-between px-4 py-2 ${
                   selectedBoardId === board.board_id
-                    ? "bg-blue-600 text-white border-r border-blue-600"
-                    : "hover:bg-gray-200 hover:text-black!"
+                    ? "bg-blue-600 text-white border-r border-blue-600!"
+                    : "hover:bg-blue-100 hover:text-black! odd:bg-white even:bg-gray-200"
                 }`}
             >
               <span
