@@ -11,19 +11,27 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import DraggableCard from "./DraggableCard"
+import { Modal } from "./ModalComponent"
 
 interface BoardContentProps {
-  selectedBoardId: number;
+  selectedBoardId: number
   boards: Board[]
 }
 
-export default function BoardContent({ selectedBoardId, boards }: BoardContentProps) {
+export default function BoardContent({
+  selectedBoardId,
+  boards,
+}: BoardContentProps) {
   const [lists, setLists] = useState<List[]>([])
   const [cards, setCards] = useState<Card[]>([])
   const [newListTitle, setNewListTitle] = useState("")
   const [newCardTitle, setNewCardTitle] = useState<{ [key: number]: string }>(
     {}
   )
+
+  const [isListModalOpen, setIsListModalOpen] = useState(false)
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false)
+  const [cardModalListId, setCardModalListId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchLists(selectedBoardId)
@@ -48,42 +56,36 @@ export default function BoardContent({ selectedBoardId, boards }: BoardContentPr
     setCards(data || [])
   }
 
-  async function addList() {
-    if (!newListTitle) return
+  async function addList(title: string) {
     const nextPosition = lists.length
-    await supabaseClient
-      .from("lists")
-      .insert([
-        {
-          title: newListTitle,
-          board_id: selectedBoardId,
-          position: nextPosition,
-        },
-      ])
-    setNewListTitle("")
+    await supabaseClient.from("lists").insert([
+      {
+        title,
+        board_id: selectedBoardId,
+        position: nextPosition,
+      },
+    ])
     fetchLists(selectedBoardId)
   }
 
-  async function addCard(listId: number) {
-    if (!newCardTitle[listId]) return
-    const cardsForList = cards.filter((card) => card.list_id === listId)
+  async function addCard(title: string) {
+    if (cardModalListId === null) return
+    const cardsForList = cards.filter((card) => card.list_id === cardModalListId)
     const nextPosition = cardsForList.length
-    await supabaseClient
-      .from("cards")
-      .insert([
-        {
-          title: newCardTitle[listId],
-          list_id: listId,
-          board_id: selectedBoardId,
-          position: nextPosition,
-        },
-      ])
-    setNewCardTitle((prev) => ({ ...prev, [listId]: "" }))
+    await supabaseClient.from("cards").insert([
+      {
+        title,
+        list_id: cardModalListId,
+        board_id: selectedBoardId,
+        position: nextPosition,
+      },
+    ])
     fetchCards(selectedBoardId)
   }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
+    console.log("active, over____", active, over)
     if (!over || active.id === over.id) return
 
     const activeCard = cards.find((c) => c.card_id === active.id)
@@ -98,7 +100,7 @@ export default function BoardContent({ selectedBoardId, boards }: BoardContentPr
       .filter((c) => c.list_id === activeListId)
       .sort((a, b) => a.position - b.position)
       .filter((c) => c.card_id !== activeCard.card_id)
-      
+
     // Cards in target list including active card if moving
     let overListCards = cards
       .filter((c) => c.list_id === overListId)
@@ -163,38 +165,37 @@ export default function BoardContent({ selectedBoardId, boards }: BoardContentPr
   }
 
   return (
-    <>
-      <h2 className="text-2xl font-bold mb-6">
-        {boards.find((b) => b.board_id === selectedBoardId)?.title}
-      </h2>
+    <div className="flex flex-col p-6">
+      <div className="bg-gray-100 rounded shadow p-4 min-w-[250px] flex items-center justify-between mb-4">
+        <h3 className="text-xl">
+          Total lists: {lists?.length}
+        </h3>
+        <div className="flex">
+          <button
+            onClick={() => setIsListModalOpen(true)}
+            className="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+          >
+            Add List
+          </button>
+        </div>
+      </div>
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="flex gap-6 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto h-screen py-2 px-0.5">
           {lists.map((list) => (
             <div
               key={list.list_id}
               className="bg-white rounded shadow p-4 min-w-[250px]"
             >
-              <div className="font-medium mb-2">{list.title}</div>
-              <div className="flex gap-2 mb-2">
-                <input
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                  placeholder="New card title"
-                  value={newCardTitle[list.list_id] || ""}
-                  onChange={(e) =>
-                    setNewCardTitle((prev) => ({
-                      ...prev,
-                      [list.list_id]: e.target.value,
-                    }))
-                  }
-                />
-                <button
-                  className="px-2 py-1 bg-blue-600 text-white rounded"
-                  onClick={() => addCard(list.list_id)}
-                  disabled={!newCardTitle[list.list_id]}
-                >
-                  Add Card
-                </button>
-              </div>
+              <h3 className="text-lg font-bold mb-2">{list.title}</h3>
+              <button
+                onClick={() => {
+                  setCardModalListId(list.list_id)
+                  setIsCardModalOpen(true)
+                }}
+                className="mb-2 px-2 py-0.5 bg-blue-600 text-white rounded"
+              >
+                Add Card
+              </button>
               <SortableContext
                 items={cards
                   .filter((card) => card.list_id === list.list_id)
@@ -212,23 +213,29 @@ export default function BoardContent({ selectedBoardId, boards }: BoardContentPr
               </SortableContext>
             </div>
           ))}
-          <div className="bg-gray-100 rounded shadow p-4 min-w-[250px] flex flex-col justify-center items-center">
-            <input
-              className="w-full px-2 py-1 border border-gray-300 rounded mb-2"
-              placeholder="New list title"
-              value={newListTitle}
-              onChange={(e) => setNewListTitle(e.target.value)}
-            />
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-              onClick={addList}
-              disabled={!newListTitle}
-            >
-              Add List
-            </button>
-          </div>
         </div>
       </DndContext>
-    </>
+
+      <Modal
+        title="Add New List"
+        isOpen={isListModalOpen}
+        onClose={() => setIsListModalOpen(false)}
+        onSubmit={addList}
+      />
+
+      <Modal
+        title="Add New Card"
+        isOpen={isCardModalOpen}
+        onClose={() => {
+          setIsCardModalOpen(false)
+          setCardModalListId(null)
+        }}
+        onSubmit={(cardTitle) => {
+          addCard(cardTitle)
+          setIsCardModalOpen(false)
+          setCardModalListId(null)
+        }}
+      />
+    </div>
   )
 }
