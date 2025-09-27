@@ -40,7 +40,7 @@ export default function Register() {
       />
       <button
         type="submit"
-        className="w-full py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
+        className="w-full py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
       >
         Register
       </button>
@@ -49,7 +49,7 @@ export default function Register() {
         Already have an account?{" "}
         <Link
           href="/login"
-          className="text-blue-600 hover:underline font-medium"
+          className="text-blue-500 hover:underline font-medium"
         >
           Login here
         </Link>

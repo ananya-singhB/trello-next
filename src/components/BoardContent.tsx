@@ -11,7 +11,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import DraggableCard from "./DraggableCard"
-import { Modal } from "./ModalComponent"
+import Modal from "./Modal"
+import AddListForm from "./AddListForm"
+import AddCardForm from "./AddCardForm"
 
 interface BoardContentProps {
   selectedBoardId: number
@@ -24,10 +26,6 @@ export default function BoardContent({
 }: BoardContentProps) {
   const [lists, setLists] = useState<List[]>([])
   const [cards, setCards] = useState<Card[]>([])
-  const [newListTitle, setNewListTitle] = useState("")
-  const [newCardTitle, setNewCardTitle] = useState<{ [key: number]: string }>(
-    {}
-  )
 
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
@@ -54,33 +52,6 @@ export default function BoardContent({
       .eq("board_id", boardId)
       .order("position")
     setCards(data || [])
-  }
-
-  async function addList(title: string) {
-    const nextPosition = lists.length
-    await supabaseClient.from("lists").insert([
-      {
-        title,
-        board_id: selectedBoardId,
-        position: nextPosition,
-      },
-    ])
-    fetchLists(selectedBoardId)
-  }
-
-  async function addCard(title: string) {
-    if (cardModalListId === null) return
-    const cardsForList = cards.filter((card) => card.list_id === cardModalListId)
-    const nextPosition = cardsForList.length
-    await supabaseClient.from("cards").insert([
-      {
-        title,
-        list_id: cardModalListId,
-        board_id: selectedBoardId,
-        position: nextPosition,
-      },
-    ])
-    fetchCards(selectedBoardId)
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -164,12 +135,18 @@ export default function BoardContent({
     }
   }
 
+  function handleCloseListModal() {
+    setIsListModalOpen(false)
+  }
+
+  function handleCloseCardModal() {
+    setIsCardModalOpen(false)
+  }
+
   return (
     <div className="flex flex-col p-6">
       <div className="bg-gray-100 rounded shadow p-4 min-w-[250px] flex items-center justify-between mb-4">
-        <h3 className="text-xl">
-          Total lists: {lists?.length}
-        </h3>
+        <h3 className="text-lg">Total lists: {lists?.length}</h3>
         <div className="flex">
           <button
             onClick={() => setIsListModalOpen(true)}
@@ -192,7 +169,7 @@ export default function BoardContent({
                   setCardModalListId(list.list_id)
                   setIsCardModalOpen(true)
                 }}
-                className="mb-2 px-2 py-0.5 bg-blue-600 text-white rounded"
+                className="mb-2 px-2 py-0.5 bg-blue-500 text-white rounded"
               >
                 Add Card
               </button>
@@ -216,26 +193,28 @@ export default function BoardContent({
         </div>
       </DndContext>
 
-      <Modal
-        title="Add New List"
-        isOpen={isListModalOpen}
-        onClose={() => setIsListModalOpen(false)}
-        onSubmit={addList}
-      />
+      <Modal open={isListModalOpen} onClose={handleCloseListModal}>
+        <AddListForm
+          boardId={selectedBoardId}
+          onSuccess={() => {
+            // show toast message
+            fetchLists(selectedBoardId)
+            handleCloseListModal()
+          }}
+        />
+      </Modal>
 
-      <Modal
-        title="Add New Card"
-        isOpen={isCardModalOpen}
-        onClose={() => {
-          setIsCardModalOpen(false)
-          setCardModalListId(null)
-        }}
-        onSubmit={(cardTitle) => {
-          addCard(cardTitle)
-          setIsCardModalOpen(false)
-          setCardModalListId(null)
-        }}
-      />
+      <Modal open={isCardModalOpen} onClose={handleCloseCardModal}>
+        <AddCardForm
+          boardId={selectedBoardId}
+          onSuccess={() => {
+            // show toast message
+            fetchCards(selectedBoardId)
+            handleCloseCardModal()
+          }}
+          listId={cardModalListId}
+        />
+      </Modal>
     </div>
   )
 }
