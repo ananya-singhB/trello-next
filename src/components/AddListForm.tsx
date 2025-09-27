@@ -22,26 +22,30 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!title) return
-    setLoading(true)
+    try {
+      e.preventDefault()
+      if (!title) return
+      setLoading(true)
 
-    // Position is count of existing lists
-    const { data: existingLists = [] } = await fetchLists(boardId)
+      // Position is count of existing lists
+      const { data: existingLists = [] } = await fetchLists(boardId)
 
-    const nextPosition = existingLists?.length || 0
+      const nextPosition = existingLists?.length || 0
 
-    const { error } = await supabaseClient
-      .from("lists")
-      .insert([{ title, board_id: boardId, position: nextPosition }])
-    if (error) {
-      alert(error.message)
-    } else {
-      onSuccess()
+      const { error } = await supabaseClient
+        .from("lists")
+        .insert([{ title, board_id: boardId, position: nextPosition }])
+      if (error) {
+        alert(error.message)
+      } else {
+        onSuccess()
+      }
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoading(false)
+      setTitle("")
     }
-
-    setLoading(false)
-    setTitle("")
   }
 
   return (
@@ -60,6 +64,7 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
         <button
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
           onClick={handleSubmit}
+          disabled={loading}
         >
           Save
         </button>

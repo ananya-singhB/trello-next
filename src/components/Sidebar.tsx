@@ -43,17 +43,45 @@ export default function Sidebar({
 
   console.log("boards in sidebar", boards)
 
+  if (!sidebarOpen) {
+    return (
+      <button
+        className="m-4 p-1 bg-gray-100 hover:bg-gray-300 focus:outline-none flex flex-col gap-1 items-center justify-center w-8 h-8 shadow"
+        aria-label="Open Sidebar"
+        onClick={() => setSidebarOpen(true)}
+      >
+        <span className="block w-4 h-0.5 bg-gray-800"></span>
+        <span className="block w-4 h-0.5 bg-gray-800"></span>
+        <span className="block w-4 h-0.5 bg-gray-800"></span>
+      </button>
+    )
+  }
+
   return (
     <aside className="border-r border-gray-300 flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b border-gray-300">
-        <h2 className="text-lg font-semibold">Boards</h2>
-        <button
+      <div className="flex items-center justify-between border-b border-gray-300">
+        <div className="m-4 p-1 bg-gray-100 hover:bg-gray-300 focus:outline-none flex flex-col gap-1 items-center justify-center w-8 h-8 shadow">
+          <button
+            className="font-bold"
+            aria-label="Close Sidebar"
+            onClick={() => setSidebarOpen(false)}
+          >
+            &#10005;
+          </button>
+        </div>
+        <div
+          className="flex items-center gap-2 hover:bg-gray-200 py-0.5 px-1.5 rounded mr-2"
           onClick={() => setShowModal(true)}
-          aria-label="Add Board"
-          className="px-2 py-0.5 bg-green-600 text-white rounded-2xl hover:bg-green-700"
         >
-          +
-        </button>
+          <h2 className="text-lg font-semibold cursor-pointer"> Add Boards</h2>
+          <button
+            onClick={() => setShowModal(true)}
+            aria-label="Add Board"
+            className="px-2 py-0.5 bg-green-600 text-white rounded-2xl hover:bg-green-700"
+          >
+            +
+          </button>
+        </div>
       </div>
       <nav className="flex-1 overflow-y-auto justify-center">
         {boards.length === 0 ? (

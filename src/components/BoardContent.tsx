@@ -150,9 +150,9 @@ export default function BoardContent({
         <div className="flex">
           <button
             onClick={() => setIsListModalOpen(true)}
-            className="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+            className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded  transition"
           >
-            Add List
+            + Add List
           </button>
         </div>
       </div>
@@ -163,16 +163,18 @@ export default function BoardContent({
               key={list.list_id}
               className="bg-white rounded shadow p-4 min-w-[250px]"
             >
-              <h3 className="text-lg font-bold mb-2">{list.title}</h3>
-              <button
-                onClick={() => {
-                  setCardModalListId(list.list_id)
-                  setIsCardModalOpen(true)
-                }}
-                className="mb-2 px-2 py-0.5 bg-blue-500 text-white rounded"
-              >
-                Add Card
-              </button>
+              <div className="flex justify-between">
+                <h3 className="text-lg font-bold mb-2">{list.title}</h3>
+                <button
+                  onClick={() => {
+                    setCardModalListId(list.list_id)
+                    setIsCardModalOpen(true)
+                  }}
+                  className="mb-2 px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                >
+                  + Add Card
+                </button>
+              </div>
               <SortableContext
                 items={cards
                   .filter((card) => card.list_id === list.list_id)
