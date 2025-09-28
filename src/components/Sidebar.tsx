@@ -45,21 +45,23 @@ export default function Sidebar({
 
   if (!sidebarOpen) {
     return (
-      <button
-        className="m-4 p-1 bg-gray-100 hover:bg-gray-300 focus:outline-none flex flex-col gap-1 items-center justify-center w-8 h-8 shadow"
-        aria-label="Open Sidebar"
-        onClick={() => setSidebarOpen(true)}
-      >
-        <span className="block w-4 h-0.5 bg-gray-800"></span>
-        <span className="block w-4 h-0.5 bg-gray-800"></span>
-        <span className="block w-4 h-0.5 bg-gray-800"></span>
-      </button>
+      <aside className="flex flex-col h-full border-r border-gray-200">
+        <button
+          className="m-4 p-1 bg-gray-100 hover:bg-gray-300 focus:outline-none flex flex-col gap-1 items-center justify-center w-8 h-8 shadow"
+          aria-label="Open Sidebar"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <span className="block w-4 h-0.5 bg-gray-800"></span>
+          <span className="block w-4 h-0.5 bg-gray-800"></span>
+          <span className="block w-4 h-0.5 bg-gray-800"></span>
+        </button>
+      </aside>
     )
   }
 
   return (
-    <aside className="border-r border-gray-300 flex flex-col h-full">
-      <div className="flex items-center justify-between border-b border-gray-300">
+    <aside className="flex flex-col h-full border-r border-gray-200">
+      <div className="flex items-center justify-between border-b border-gray-300 pb-2">
         <div className="m-4 p-1 bg-gray-100 hover:bg-gray-300 focus:outline-none flex flex-col gap-1 items-center justify-center w-8 h-8 shadow">
           <button
             className="font-bold"
