@@ -5,36 +5,41 @@ import { supabaseClient } from "@/lib/supabaseClient"
 
 interface Props {
   boardId: number
+  listId: number | null
   onSuccess: () => void
 }
 
-export default function AddListForm({ boardId, onSuccess }: Props) {
+export default function AddCardForm({ listId, boardId, onSuccess }: Props) {
   const [title, setTitle] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function fetchLists(boardId: number) {
+  async function fetchCards(boardId: number) {
     const { data } = await supabaseClient
-      .from("lists")
+      .from("cards")
       .select("*")
       .eq("board_id", boardId)
       .order("position")
-    return { data }
+
+    return data
   }
 
   async function handleSubmit(e: React.FormEvent) {
     try {
       e.preventDefault()
-      if (!title) return
+      if (!title || listId === null) return
       setLoading(true)
 
-      // Position is count of existing lists
-      const { data: existingLists = [] } = await fetchLists(boardId)
-
-      const nextPosition = existingLists?.length || 0
-
-      const { error } = await supabaseClient
-        .from("lists")
-        .insert([{ title, board_id: boardId, position: nextPosition }])
+      const cards = (await fetchCards(boardId)) || []
+      const cardsForList = cards?.filter((card) => card.list_id === listId)
+      const nextPosition = cardsForList.length
+      const { error } = await supabaseClient.from("cards").insert([
+        {
+          title,
+          list_id: listId,
+          board_id: boardId,
+          position: nextPosition,
+        },
+      ])
       if (error) {
         alert(error.message)
       } else {
@@ -50,7 +55,7 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-lg font-semibold">Add New List</h3>
+      <h3 className="text-lg font-semibold">Add New Card</h3>
       <input
         type="text"
         placeholder="List title"

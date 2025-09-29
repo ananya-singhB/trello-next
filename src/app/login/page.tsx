@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabaseClient } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -8,6 +8,16 @@ export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
+
+  useEffect(() => {
+    async function checkUser() {
+      const { data } = await supabaseClient.auth.getUser()
+      if (data.user) {
+        router.replace("/")
+      }
+    }
+    checkUser()
+  }, [router])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -18,7 +28,6 @@ export default function Login() {
     if (error) {
       alert(error.message)
     } else {
-      // Get the logged-in user's ID
       const { data, error: userError } = await supabaseClient.auth.getUser()
       if (userError) {
         alert(userError.message)
@@ -26,9 +35,8 @@ export default function Login() {
         console.log("Login successful", data)
         const userId = data.user?.id
         console.log("User ID:", userId)
-        // You can use userId for further actions, e.g., fetch boards
         localStorage.setItem("userId", userId)
-        router.push("/board")
+        router.push("/")
       }
     }
   }
@@ -57,7 +65,7 @@ export default function Login() {
         required
       />
       <button
-        className="w-full py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
+        className="w-full py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
         type="submit"
       >
         Login
@@ -66,7 +74,7 @@ export default function Login() {
         Don't have an account?{" "}
         <Link
           href="/register"
-          className="text-blue-600 hover:underline font-medium"
+          className="text-blue-500 hover:underline font-medium"
         >
           Register here
         </Link>

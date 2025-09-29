@@ -44,7 +44,7 @@ export default function BoardsPage() {
     <div className="flex h-screen bg-gray-50 w-full">
       <div
         className={`flex flex-col transition-all duration-300 ${
-          sidebarOpen ? "w-64" : "w-0"
+          sidebarOpen ? "w-64" : "w-20"
         } bg-white shadow h-full overflow-y-auto`}
       >
         <Sidebar
