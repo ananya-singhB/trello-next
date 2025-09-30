@@ -47,6 +47,37 @@ function DroppableListArea({
   )
 }
 
+function DropEndPlaceholder({ listId }: { listId: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `card-end-${listId}` })
+  return (
+    <li
+      ref={setNodeRef}
+      className={`flex items-center justify-center text-gray-400 transition border-dashed border-2 rounded ${
+        isOver ? "bg-blue-100 border-blue-400 text-blue-600" : "bg-gray-100 border-gray-200"
+      }`}
+      style={{ minHeight: "180px" }}
+    >
+      Drop a card here
+    </li>
+  )
+}
+
+function EmptyListPlaceholder({ listId }: { listId: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `list-${listId}` });
+  return (
+    <li
+      ref={setNodeRef}
+      className={`flex items-center justify-center text-gray-400 transition border-dashed border-2 rounded ${
+        isOver ? "bg-blue-100 border-blue-400 text-blue-600" : "bg-gray-100 border-gray-200"
+      }`}
+      style={{ minHeight: "180px" }}
+    >
+      Drop a card here
+    </li>
+  );
+}
+
+
 export default function BoardContent({
   selectedBoardId,
   boards,
@@ -98,7 +129,31 @@ export default function BoardContent({
     if (typeof over.id === "string" && over.id.startsWith("list-")) {
       const listId = Number(over.id.replace("list-", ""))
       if (activeCard.list_id === listId) return
+      const updatedCardsExcludingActive = cards.filter(
+        (c) => c.card_id !== activeCard.card_id
+      )
+      const targetListCards = updatedCardsExcludingActive
+        .filter((c) => c.list_id === listId)
+        .sort((a, b) => a.position - b.position)
+      activeCard.list_id = listId
+      const newTargetListCards = [...targetListCards, activeCard].map(
+        (card, idx) => ({ ...card, position: idx })
+      )
+      const otherCards = updatedCardsExcludingActive.filter(
+        (c) => c.list_id !== listId
+      )
+      setCards([...otherCards, ...newTargetListCards])
+      for (const card of newTargetListCards) {
+        await supabaseClient
+          .from("cards")
+          .update({ position: card.position, list_id: card.list_id })
+          .eq("card_id", card.card_id)
+      }
+      return
+    }
 
+    if (typeof over.id === "string" && over.id.startsWith("card-end-")) {
+      const listId = Number(over.id.replace("card-end-", ""))
       const updatedCardsExcludingActive = cards.filter(
         (c) => c.card_id !== activeCard.card_id
       )
@@ -230,7 +285,7 @@ export default function BoardContent({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-1 overflow-x-auto h-screen py-2 px-0.5">
+        <div className="flex gap-1 overflow-x-auto py-2 px-0.5">
           {lists.map((list) => {
             const cardsForList = cards
               .filter((card) => card.list_id === list.list_id)
@@ -238,7 +293,7 @@ export default function BoardContent({
 
             return (
               <DroppableListArea key={list.list_id} id={list.list_id}>
-                <div className="bg-white rounded shadow p-4 min-w-[250px] min-h-[80vh] max-h-fit">
+                <div className="bg-white rounded shadow p-4 min-w-[250px] max-h-fit">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-bold mb-2">{list.title}</h3>
                     <button
@@ -256,15 +311,16 @@ export default function BoardContent({
                     items={cardsForList.map((card) => card.card_id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <ul className="space-y-1 overflow-y-auto max-h-[70vh]">
+                    <ul className="space-y-1 overflow-y-auto">
                       {cardsForList.length === 0 ? (
-                        <li className="text-gray-400 select-none pointer-events-none">
-                          Drop cards here
-                        </li>
+                        <EmptyListPlaceholder listId={list.list_id} />
                       ) : (
-                        cardsForList.map((card) => (
-                          <DraggableCard key={card.card_id} card={card} />
-                        ))
+                        <>
+                          {cardsForList.map((card) => (
+                            <DraggableCard key={card.card_id} card={card} />
+                          ))}
+                          <DropEndPlaceholder listId={list.list_id} />
+                        </>
                       )}
                     </ul>
                   </SortableContext>

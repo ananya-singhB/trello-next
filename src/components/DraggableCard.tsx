@@ -6,9 +6,10 @@ import type { Card } from "@/types";
 
 interface DraggableCardProps {
   card: Card;
+  dragOverlay?: boolean;
 }
 
-export default function DraggableCard({ card }: DraggableCardProps) {
+export default function DraggableCard({ card, dragOverlay }: DraggableCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: card.card_id });
 
   const style = {
@@ -18,8 +19,19 @@ export default function DraggableCard({ card }: DraggableCardProps) {
   };
 
   return (
-    <li ref={setNodeRef} style={style} {...attributes} {...listeners} className="px-2 py-1 bg-gray-200 rounded mb-1">
-      {card.title}
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`px-2 py-1 bg-gray-200 rounded mb-1 ${dragOverlay ? "shadow-lg scale-105 z-50" : ""}`}
+    >
+      <h4 className="font-semibold">{card.title}</h4>
+      {card.description && (
+        <p className="text-gray-600 mt-1 text-sm whitespace-pre-wrap">
+          {card.description}
+        </p>
+      )}
     </li>
   );
 }
