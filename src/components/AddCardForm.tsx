@@ -11,6 +11,7 @@ interface Props {
 
 export default function AddCardForm({ listId, boardId, onSuccess }: Props) {
   const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
 
   async function fetchCards(boardId: number) {
@@ -24,17 +25,19 @@ export default function AddCardForm({ listId, boardId, onSuccess }: Props) {
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    try {
-      e.preventDefault()
-      if (!title || listId === null) return
-      setLoading(true)
+    e.preventDefault()
+    if (!title.trim() || listId === null) return
 
+    setLoading(true)
+
+    try {
       const cards = (await fetchCards(boardId)) || []
-      const cardsForList = cards?.filter((card) => card.list_id === listId)
+      const cardsForList = cards.filter((card) => card.list_id === listId)
       const nextPosition = cardsForList.length
       const { error } = await supabaseClient.from("cards").insert([
         {
-          title,
+          title: title.trim(),
+          description: description.trim() || null,
           list_id: listId,
           board_id: boardId,
           position: nextPosition,
@@ -43,13 +46,14 @@ export default function AddCardForm({ listId, boardId, onSuccess }: Props) {
       if (error) {
         alert(error.message)
       } else {
+        setTitle("")
+        setDescription("")
         onSuccess()
       }
     } catch (error) {
-      console.log(error)
+      console.error(error)
     } finally {
       setLoading(false)
-      setTitle("")
     }
   }
 
@@ -58,22 +62,28 @@ export default function AddCardForm({ listId, boardId, onSuccess }: Props) {
       <h3 className="text-lg font-semibold">Add New Card</h3>
       <input
         type="text"
-        placeholder="List title"
+        placeholder="Card title"
         className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         disabled={loading}
         required
       />
-      <div className="flex justify-start gap-2">
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          Save
-        </button>
-      </div>
+      <textarea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={4}
+        className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+        disabled={loading}
+      />
+      <button
+        type="submit"
+        disabled={loading}
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+      >
+        {loading ? "Adding..." : "Add Card"}
+      </button>
     </form>
   )
 }
