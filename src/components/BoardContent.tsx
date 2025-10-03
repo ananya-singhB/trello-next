@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { supabaseClient } from "@/lib/supabaseClient"
 import type { List, Card, Board } from "@/types"
-
 import {
   DndContext,
   closestCenter,
@@ -25,6 +24,71 @@ import AddCardForm from "./AddCardForm"
 interface BoardContentProps {
   selectedBoardId: number
   boards: Board[]
+}
+
+function EditCardModal({
+  card,
+  open,
+  onClose,
+  onSave,
+}: {
+  card: Card | null
+  open: boolean
+  onClose: () => void
+  onSave: (card: Card, title: string, description: string) => Promise<void>
+}) {
+  const [title, setTitle] = useState(card?.title ?? "")
+  const [description, setDescription] = useState(card?.description ?? "")
+
+  useEffect(() => {
+    setTitle(card?.title ?? "")
+    setDescription(card?.description ?? "")
+  }, [card])
+
+  return (
+    <Modal open={open} onClose={onClose}>
+      <form
+        className="space-y-4"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          if (!card) return
+          await onSave(card, title, description)
+        }}
+      >
+        <h3 className="text-lg font-semibold">Edit Card</h3>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          placeholder="Card Title"
+          required
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+          placeholder="Description (optional)"
+          rows={3}
+        />
+        <div className="flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Save
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
 }
 
 function DroppableListArea({
@@ -53,7 +117,9 @@ function DropEndPlaceholder({ listId }: { listId: number }) {
     <li
       ref={setNodeRef}
       className={`flex items-center justify-center text-gray-400 transition border-dashed border-2 rounded ${
-        isOver ? "bg-blue-100 border-blue-400 text-blue-600" : "bg-gray-100 border-gray-200"
+        isOver
+          ? "bg-blue-100 border-blue-400 text-blue-600"
+          : "bg-gray-100 border-gray-200"
       }`}
       style={{ minHeight: "180px" }}
     >
@@ -63,20 +129,21 @@ function DropEndPlaceholder({ listId }: { listId: number }) {
 }
 
 function EmptyListPlaceholder({ listId }: { listId: number }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `list-${listId}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `list-${listId}` })
   return (
     <li
       ref={setNodeRef}
       className={`flex items-center justify-center text-gray-400 transition border-dashed border-2 rounded ${
-        isOver ? "bg-blue-100 border-blue-400 text-blue-600" : "bg-gray-100 border-gray-200"
+        isOver
+          ? "bg-blue-100 border-blue-400 text-blue-600"
+          : "bg-gray-100 border-gray-200"
       }`}
       style={{ minHeight: "180px" }}
     >
       Drop a card here
     </li>
-  );
+  )
 }
-
 
 export default function BoardContent({
   selectedBoardId,
@@ -85,10 +152,11 @@ export default function BoardContent({
   const [lists, setLists] = useState<List[]>([])
   const [cards, setCards] = useState<Card[]>([])
 
+  const [editCard, setEditCard] = useState<Card | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
   const [cardModalListId, setCardModalListId] = useState<number | null>(null)
-
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -160,18 +228,14 @@ export default function BoardContent({
       const targetListCards = updatedCardsExcludingActive
         .filter((c) => c.list_id === listId)
         .sort((a, b) => a.position - b.position)
-
       activeCard.list_id = listId
       const newTargetListCards = [...targetListCards, activeCard].map(
         (card, idx) => ({ ...card, position: idx })
       )
-
       const otherCards = updatedCardsExcludingActive.filter(
         (c) => c.list_id !== listId
       )
-
       setCards([...otherCards, ...newTargetListCards])
-
       for (const card of newTargetListCards) {
         await supabaseClient
           .from("cards")
@@ -183,15 +247,12 @@ export default function BoardContent({
 
     const overCard = cards.find((c) => c.card_id === over.id)
     if (!overCard) return
-
     const activeListId = activeCard.list_id
     const overListId = overCard.list_id
-
     const activeListCards = cards
       .filter((c) => c.list_id === activeListId)
       .sort((a, b) => a.position - b.position)
       .filter((c) => c.card_id !== activeCard.card_id)
-
     let overListCards = cards
       .filter((c) => c.list_id === overListId)
       .sort((a, b) => a.position - b.position)
@@ -202,12 +263,10 @@ export default function BoardContent({
       const newCardsOrder = arrayMove(overListCards, oldIndex, newIndex).map(
         (card, idx) => ({ ...card, position: idx })
       )
-
       setCards([
         ...cards.filter((c) => c.list_id !== activeListId),
         ...newCardsOrder,
       ])
-
       for (const card of newCardsOrder) {
         await supabaseClient
           .from("cards")
@@ -216,16 +275,13 @@ export default function BoardContent({
       }
     } else {
       const newActiveListCards = activeListCards
-
       const overIndex = overListCards.findIndex((c) => c.card_id === over.id)
       const newOverListCards = [
         ...overListCards.slice(0, overIndex),
         activeCard,
         ...overListCards.slice(overIndex),
       ]
-
       activeCard.list_id = overListId
-
       const updatedActiveList = newActiveListCards.map((card, idx) => ({
         ...card,
         position: idx,
@@ -234,7 +290,6 @@ export default function BoardContent({
         ...card,
         position: idx,
       }))
-
       setCards([
         ...cards.filter(
           (c) => c.list_id !== activeListId && c.list_id !== overListId
@@ -242,7 +297,6 @@ export default function BoardContent({
         ...updatedActiveList,
         ...updatedOverList,
       ])
-
       for (const card of [...updatedActiveList, ...updatedOverList]) {
         await supabaseClient
           .from("cards")
@@ -264,11 +318,25 @@ export default function BoardContent({
     setIsCardModalOpen(false)
   }
 
+  async function handleEditCardSave(
+    card: Card,
+    title: string,
+    description: string
+  ) {
+    await supabaseClient
+      .from("cards")
+      .update({ title, description })
+      .eq("card_id", card.card_id)
+    setShowEditModal(false)
+    setEditCard(null)
+    await fetchCards(selectedBoardId)
+  }
+
   const activeCard = cards.find((card) => card.card_id === activeCardId)
 
   return (
     <div className="flex flex-col p-6">
-      <div className="bg-gray-100 rounded shadow p-4 min-w-[250px] flex items-center justify-between mb-4">
+      <div className="bg-gray-100 rounded shadow p-4 min-w-[280px] flex items-center justify-between mb-4">
         <h3 className="text-lg">Total lists: {lists?.length}</h3>
         <div className="flex">
           <button
@@ -306,7 +374,6 @@ export default function BoardContent({
                       + Add Card
                     </button>
                   </div>
-
                   <SortableContext
                     items={cardsForList.map((card) => card.card_id)}
                     strategy={verticalListSortingStrategy}
@@ -317,7 +384,36 @@ export default function BoardContent({
                       ) : (
                         <>
                           {cardsForList.map((card) => (
-                            <DraggableCard key={card.card_id} card={card} />
+                            <div
+                              key={card.card_id}
+                              className="flex items-center gap-2 pr-1"
+                            >
+                              <DraggableCard card={card} />
+                              <button
+                                aria-label="Edit card"
+                                className="p-1 rounded hover:bg-gray-300 transition focus:outline-none focus:ring-0"
+                                type="button"
+                                onClick={() => {
+                                  setEditCard(card)
+                                  setShowEditModal(true)
+                                }}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="w-4 h-4 text-gray-600"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M15.232 5.232a2.5 2.5 0 113.536 3.536L7.5 20.036l-4 1c-.261.066-.511-.163-.445-.445l1-4L15.232 5.232z"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                           ))}
                           <DropEndPlaceholder listId={list.list_id} />
                         </>
@@ -329,12 +425,10 @@ export default function BoardContent({
             )
           })}
         </div>
-
         <DragOverlay>
           {activeCard ? <DraggableCard card={activeCard} dragOverlay /> : null}
         </DragOverlay>
       </DndContext>
-
       <Modal open={isListModalOpen} onClose={handleCloseListModal}>
         <AddListForm
           boardId={selectedBoardId}
@@ -344,7 +438,6 @@ export default function BoardContent({
           }}
         />
       </Modal>
-
       <Modal open={isCardModalOpen} onClose={handleCloseCardModal}>
         <AddCardForm
           boardId={selectedBoardId}
@@ -355,6 +448,15 @@ export default function BoardContent({
           listId={cardModalListId}
         />
       </Modal>
+      <EditCardModal
+        card={editCard}
+        open={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditCard(null)
+        }}
+        onSave={handleEditCardSave}
+      />
     </div>
   )
 }

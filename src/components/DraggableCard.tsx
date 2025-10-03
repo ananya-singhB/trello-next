@@ -24,14 +24,16 @@ export default function DraggableCard({ card, dragOverlay }: DraggableCardProps)
       style={style}
       {...attributes}
       {...listeners}
-      className={`px-2 py-1 bg-gray-200 rounded mb-1 ${dragOverlay ? "shadow-lg scale-105 z-50" : ""}`}
+      className={`px-2 py-1 bg-gray-200 rounded mb-1 flex-1 ${dragOverlay ? "shadow-lg scale-105 z-50" : ""}`}
     >
-      <h4 className="font-semibold">{card.title}</h4>
-      {card.description && (
-        <p className="text-gray-600 mt-1 text-sm whitespace-pre-wrap">
-          {card.description}
-        </p>
-      )}
+      <div>
+        <h4 className="font-semibold truncate">{card.title}</h4>
+        {card.description && (
+          <p className="text-gray-600 mt-1 text-sm whitespace-pre-wrap truncate">
+            {card.description}
+          </p>
+        )}
+      </div>
     </li>
   );
 }
