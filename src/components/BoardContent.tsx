@@ -332,6 +332,11 @@ export default function BoardContent({
     await fetchCards(selectedBoardId)
   }
 
+  function handleDoubleClick(card: Card) {
+    setEditCard(card)
+    setShowEditModal(true)
+  }
+
   const activeCard = cards.find((card) => card.card_id === activeCardId)
 
   return (
@@ -384,36 +389,11 @@ export default function BoardContent({
                       ) : (
                         <>
                           {cardsForList.map((card) => (
-                            <div
+                            <DraggableCard
                               key={card.card_id}
-                              className="flex items-center gap-2 pr-1"
-                            >
-                              <DraggableCard card={card} />
-                              <button
-                                aria-label="Edit card"
-                                className="p-1 rounded hover:bg-gray-300 transition focus:outline-none focus:ring-0"
-                                type="button"
-                                onClick={() => {
-                                  setEditCard(card)
-                                  setShowEditModal(true)
-                                }}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="w-4 h-4 text-gray-600"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M15.232 5.232a2.5 2.5 0 113.536 3.536L7.5 20.036l-4 1c-.261.066-.511-.163-.445-.445l1-4L15.232 5.232z"
-                                  />
-                                </svg>
-                              </button>
-                            </div>
+                              card={card}
+                              onDoubleClick={handleDoubleClick}
+                            />
                           ))}
                           <DropEndPlaceholder listId={list.list_id} />
                         </>
@@ -426,7 +406,13 @@ export default function BoardContent({
           })}
         </div>
         <DragOverlay>
-          {activeCard ? <DraggableCard card={activeCard} dragOverlay /> : null}
+          {activeCard ? (
+            <DraggableCard
+              card={activeCard}
+              dragOverlay
+              onDoubleClick={handleDoubleClick}
+            />
+          ) : null}
         </DragOverlay>
       </DndContext>
       <Modal open={isListModalOpen} onClose={handleCloseListModal}>
