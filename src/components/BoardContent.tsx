@@ -158,6 +158,7 @@ export default function BoardContent({
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
   const [cardModalListId, setCardModalListId] = useState<number | null>(null)
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchLists(selectedBoardId)
@@ -332,18 +333,53 @@ export default function BoardContent({
     await fetchCards(selectedBoardId)
   }
 
+  function handleEditStart(card: Card) {
+    if (editingCardId === null) {
+      setEditingCardId(card.card_id)
+    }
+  }
+
+  function handleEditCancel() {
+    setEditingCardId(null)
+  }
+  async function handleEditSave(
+    cardId: string,
+    title: string,
+    description: string
+  ) {
+    await supabaseClient
+      .from("cards")
+      .update({ title, description })
+      .eq("card_id", cardId)
+    handleEditCancel()
+    await fetchCards(selectedBoardId)
+  }
+
   const activeCard = cards.find((card) => card.card_id === activeCardId)
 
   return (
     <div className="flex flex-col p-6">
       <div className="bg-gray-100 rounded shadow p-4 min-w-[280px] flex items-center justify-between mb-4">
         <h3 className="text-lg">Total lists: {lists?.length}</h3>
-        <div className="flex">
+        <div className="flex gap-2">
           <button
-            onClick={() => setIsListModalOpen(true)}
+            onClick={() => {
+              setIsListModalOpen(true)
+              handleEditCancel()
+            }}
             className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition"
           >
             + Add List
+          </button>
+
+          <button
+            onClick={() => {
+              setIsCardModalOpen(true)
+              handleEditCancel()
+            }}
+            className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
+          >
+            + Add Card
           </button>
         </div>
       </div>
@@ -364,15 +400,6 @@ export default function BoardContent({
                 <div className="bg-white rounded shadow p-4 min-w-[250px] max-h-fit">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-bold mb-2">{list.title}</h3>
-                    <button
-                      onClick={() => {
-                        setCardModalListId(list.list_id)
-                        setIsCardModalOpen(true)
-                      }}
-                      className="mb-2 px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                    >
-                      + Add Card
-                    </button>
                   </div>
                   <SortableContext
                     items={cardsForList.map((card) => card.card_id)}
@@ -384,36 +411,14 @@ export default function BoardContent({
                       ) : (
                         <>
                           {cardsForList.map((card) => (
-                            <div
+                            <DraggableCard
                               key={card.card_id}
-                              className="flex items-center gap-2 pr-1"
-                            >
-                              <DraggableCard card={card} />
-                              <button
-                                aria-label="Edit card"
-                                className="p-1 rounded hover:bg-gray-300 transition focus:outline-none focus:ring-0"
-                                type="button"
-                                onClick={() => {
-                                  setEditCard(card)
-                                  setShowEditModal(true)
-                                }}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="w-4 h-4 text-gray-600"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M15.232 5.232a2.5 2.5 0 113.536 3.536L7.5 20.036l-4 1c-.261.066-.511-.163-.445-.445l1-4L15.232 5.232z"
-                                  />
-                                </svg>
-                              </button>
-                            </div>
+                              card={card}
+                              editingCardId={editingCardId}
+                              onEditStart={handleEditStart}
+                              onEditSave={handleEditSave}
+                              onEditCancel={handleEditCancel}
+                            />
                           ))}
                           <DropEndPlaceholder listId={list.list_id} />
                         </>
@@ -426,7 +431,16 @@ export default function BoardContent({
           })}
         </div>
         <DragOverlay>
-          {activeCard ? <DraggableCard card={activeCard} dragOverlay /> : null}
+          {activeCard ? (
+            <DraggableCard
+              card={activeCard}
+              dragOverlay
+              editingCardId={editingCardId}
+              onEditStart={handleEditStart}
+              onEditSave={handleEditSave}
+              onEditCancel={handleEditCancel}
+            />
+          ) : null}
         </DragOverlay>
       </DndContext>
       <Modal open={isListModalOpen} onClose={handleCloseListModal}>
@@ -443,7 +457,8 @@ export default function BoardContent({
           boardId={selectedBoardId}
           onSuccess={() => {
             fetchCards(selectedBoardId)
-            handleCloseCardModal()
+            fetchLists(selectedBoardId)
+            setIsCardModalOpen(false)
           }}
           listId={cardModalListId}
         />
