@@ -366,12 +366,19 @@ export default function BoardContent({
     <div className="flex flex-col p-6">
       <div className="bg-gray-100 rounded shadow p-4 min-w-[280px] flex items-center justify-between mb-4">
         <h3 className="text-lg">Total lists: {lists?.length}</h3>
-        <div className="flex">
+        <div className="flex gap-2">
           <button
             onClick={() => setIsListModalOpen(true)}
             className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition"
           >
             + Add List
+          </button>
+
+          <button
+            onClick={() => setIsCardModalOpen(true)}
+            className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
+          >
+            + Add Card
           </button>
         </div>
       </div>
@@ -392,15 +399,6 @@ export default function BoardContent({
                 <div className="bg-white rounded shadow p-4 min-w-[250px] max-h-fit">
                   <div className="flex justify-between">
                     <h3 className="text-lg font-bold mb-2">{list.title}</h3>
-                    <button
-                      onClick={() => {
-                        setCardModalListId(list.list_id)
-                        setIsCardModalOpen(true)
-                      }}
-                      className="mb-2 px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded"
-                    >
-                      + Add Card
-                    </button>
                   </div>
                   <SortableContext
                     items={cardsForList.map((card) => card.card_id)}
@@ -458,7 +456,8 @@ export default function BoardContent({
           boardId={selectedBoardId}
           onSuccess={() => {
             fetchCards(selectedBoardId)
-            handleCloseCardModal()
+            fetchLists(selectedBoardId)
+            setIsCardModalOpen(false)
           }}
           listId={cardModalListId}
         />
