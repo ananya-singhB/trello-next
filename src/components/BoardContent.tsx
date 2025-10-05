@@ -333,11 +333,6 @@ export default function BoardContent({
     await fetchCards(selectedBoardId)
   }
 
-  function handleDoubleClick(card: Card) {
-    setEditCard(card)
-    setShowEditModal(true)
-  }
-
   function handleEditStart(card: Card) {
     if (editingCardId === null) {
       setEditingCardId(card.card_id)
@@ -356,7 +351,7 @@ export default function BoardContent({
       .from("cards")
       .update({ title, description })
       .eq("card_id", cardId)
-    setEditingCardId(null)
+    handleEditCancel()
     await fetchCards(selectedBoardId)
   }
 
@@ -368,14 +363,20 @@ export default function BoardContent({
         <h3 className="text-lg">Total lists: {lists?.length}</h3>
         <div className="flex gap-2">
           <button
-            onClick={() => setIsListModalOpen(true)}
+            onClick={() => {
+              setIsListModalOpen(true)
+              handleEditCancel()
+            }}
             className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition"
           >
             + Add List
           </button>
 
           <button
-            onClick={() => setIsCardModalOpen(true)}
+            onClick={() => {
+              setIsCardModalOpen(true)
+              handleEditCancel()
+            }}
             className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
           >
             + Add Card
