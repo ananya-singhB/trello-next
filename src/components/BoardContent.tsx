@@ -158,6 +158,7 @@ export default function BoardContent({
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
   const [cardModalListId, setCardModalListId] = useState<number | null>(null)
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchLists(selectedBoardId)
@@ -337,6 +338,28 @@ export default function BoardContent({
     setShowEditModal(true)
   }
 
+  function handleEditStart(card: Card) {
+    if (editingCardId === null) {
+      setEditingCardId(card.card_id)
+    }
+  }
+
+  function handleEditCancel() {
+    setEditingCardId(null)
+  }
+  async function handleEditSave(
+    cardId: string,
+    title: string,
+    description: string
+  ) {
+    await supabaseClient
+      .from("cards")
+      .update({ title, description })
+      .eq("card_id", cardId)
+    setEditingCardId(null)
+    await fetchCards(selectedBoardId)
+  }
+
   const activeCard = cards.find((card) => card.card_id === activeCardId)
 
   return (
@@ -392,7 +415,10 @@ export default function BoardContent({
                             <DraggableCard
                               key={card.card_id}
                               card={card}
-                              onDoubleClick={handleDoubleClick}
+                              editingCardId={editingCardId}
+                              onEditStart={handleEditStart}
+                              onEditSave={handleEditSave}
+                              onEditCancel={handleEditCancel}
                             />
                           ))}
                           <DropEndPlaceholder listId={list.list_id} />
@@ -410,7 +436,10 @@ export default function BoardContent({
             <DraggableCard
               card={activeCard}
               dragOverlay
-              onDoubleClick={handleDoubleClick}
+              editingCardId={editingCardId}
+              onEditStart={handleEditStart}
+              onEditSave={handleEditSave}
+              onEditCancel={handleEditCancel}
             />
           ) : null}
         </DragOverlay>
