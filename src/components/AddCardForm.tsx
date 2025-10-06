@@ -8,7 +8,6 @@ import CreatableSelect from "react-select/creatable"
 interface Props {
   boardId: number
   onSuccess: () => void
-  onClose: () => void
 }
 
 interface ListOption {
@@ -17,7 +16,7 @@ interface ListOption {
   __isNew__?: boolean
 }
 
-export default function AddCardForm({ boardId, onSuccess, onClose }: Props) {
+export default function AddCardForm({ boardId, onSuccess }: Props) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
@@ -104,7 +103,6 @@ export default function AddCardForm({ boardId, onSuccess, onClose }: Props) {
         setDescription("")
         setSelectedOption(null)
         onSuccess()
-        onClose()
       }
     } catch (error) {
       console.error(error)
@@ -120,7 +118,7 @@ export default function AddCardForm({ boardId, onSuccess, onClose }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-lg font-semibold">Add New Card</h3>
+      <h3 className="text-lg font-semibold">Create New Card</h3>
 
       <input
         type="text"
@@ -160,7 +158,7 @@ export default function AddCardForm({ boardId, onSuccess, onClose }: Props) {
         disabled={loading}
         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
       >
-        {loading ? "Adding..." : "Add Card"}
+        {loading ? "Saving..." : "Save"}
       </button>
     </form>
   )

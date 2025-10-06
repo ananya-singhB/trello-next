@@ -24,7 +24,7 @@ This is a full-stack Kanban-style task management application built with modern 
 ## Features
 
 - Create, rename, and delete boards  
-- Add lists and cards dynamically per board  
+- Create lists and cards dynamically per board  
 - Drag and drop cards within the same list and between different lists  
 - Persist card order and list assignment in real-time with Supabase  
 - Responsive UI optimized for desktop and mobile  

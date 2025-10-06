@@ -75,10 +75,10 @@ export default function Sidebar({
           className="flex items-center gap-2 hover:bg-gray-200 py-0.5 px-1.5 rounded mr-2"
           onClick={() => setShowModal(true)}
         >
-          <h2 className="text-lg font-semibold cursor-pointer"> Add Boards</h2>
+          <h2 className="text-lg font-semibold cursor-pointer"> Create Board</h2>
           <button
             onClick={() => setShowModal(true)}
-            aria-label="Add Board"
+            aria-label="Create Board"
             className="px-2 py-0.5 bg-green-600 text-white rounded-2xl hover:bg-green-700"
           >
             +

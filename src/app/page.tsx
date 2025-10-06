@@ -1,15 +1,14 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect } from "react"
 import { supabaseClient } from "@/lib/supabaseClient"
 import type { Board } from "@/types"
 import Sidebar from "@/components/Sidebar"
 
 import dynamic from "next/dynamic"
-import Loader from "@/components/Loader"
-import { useRouter } from "next/navigation"
 
-const BoardContent = dynamic(() => import("@/components/BoardContent"), {})
+import { useRouter } from "next/navigation"
+import Boards from "@/components/Boards"
 
 export default function BoardsPage() {
   const router = useRouter()
@@ -83,17 +82,7 @@ export default function BoardsPage() {
             </svg>
           </button>
         </header>
-        <Suspense fallback={<Loader />}>
-          {selectedBoardId ? (
-            <BoardContent selectedBoardId={selectedBoardId} boards={boards} />
-          ) : (
-            <div className="text-center text-gray-400 text-xl mt-20">
-              No board selected
-              <br />
-              <span className="text-base">Create or select a board</span>
-            </div>
-          )}
-        </Suspense>
+        <Boards selectedBoardId={selectedBoardId} boards={boards} />
       </main>
     </div>
   )

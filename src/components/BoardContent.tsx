@@ -157,8 +157,8 @@ export default function BoardContent({
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
   const [cardModalListId, setCardModalListId] = useState<number | null>(null)
-  const [activeCardId, setActiveCardId] = useState<string | null>(null)
-  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [activeCardId, setActiveCardId] = useState<number | null>(null)
+  const [editingCardId, setEditingCardId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchLists(selectedBoardId)
@@ -184,7 +184,7 @@ export default function BoardContent({
   }
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveCardId(event.active.id as string)
+    setActiveCardId(event.active.id as number)
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -344,7 +344,7 @@ export default function BoardContent({
   }
 
   async function handleEditSave(
-    cardId: string,
+    cardId: number,
     title: string,
     description: string
   ) {
@@ -393,7 +393,7 @@ export default function BoardContent({
     await fetchCards(selectedBoardId)
   }
 
-  const activeCard = cards.find((card) => card.card_id === activeCardId)
+  const activeCard = cards.find((card) => card?.card_id === activeCardId)
 
   return (
     <div className="flex flex-col p-6">
@@ -407,7 +407,7 @@ export default function BoardContent({
             }}
             className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded transition"
           >
-            + Add List
+            + Create List
           </button>
 
           <button
@@ -417,7 +417,7 @@ export default function BoardContent({
             }}
             className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
           >
-            + Add Card
+            + Create Card
           </button>
         </div>
       </div>
@@ -506,7 +506,6 @@ export default function BoardContent({
             fetchLists(selectedBoardId)
             setIsCardModalOpen(false)
           }}
-          listId={cardModalListId}
         />
       </Modal>
       <EditCardModal
