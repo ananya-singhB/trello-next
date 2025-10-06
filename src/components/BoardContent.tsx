@@ -342,6 +342,7 @@ export default function BoardContent({
   function handleEditCancel() {
     setEditingCardId(null)
   }
+
   async function handleEditSave(
     cardId: string,
     title: string,
@@ -352,6 +353,43 @@ export default function BoardContent({
       .update({ title, description })
       .eq("card_id", cardId)
     handleEditCancel()
+    await fetchCards(selectedBoardId)
+  }
+
+  async function handleDeleteList(listId: number) {
+    const hasCards = cards.some((c) => c.list_id === listId)
+
+    if (
+      !confirm(
+        `Are you sure you want to delete this list?${
+          hasCards ? " All cards under it will be deleted too." : ""
+        }`
+      )
+    ) {
+      return
+    }
+
+    const { error: delCardsError } = await supabaseClient
+      .from("cards")
+      .delete()
+      .eq("list_id", listId)
+
+    if (delCardsError) {
+      alert("Error deleting cards in list: " + delCardsError.message)
+      return
+    }
+
+    const { error: delListError } = await supabaseClient
+      .from("lists")
+      .delete()
+      .eq("list_id", listId)
+
+    if (delListError) {
+      alert("Error deleting list: " + delListError.message)
+      return
+    }
+
+    await fetchLists(selectedBoardId)
     await fetchCards(selectedBoardId)
   }
 
@@ -398,8 +436,16 @@ export default function BoardContent({
             return (
               <DroppableListArea key={list.list_id} id={list.list_id}>
                 <div className="bg-white rounded shadow p-4 min-w-[250px] max-h-fit">
-                  <div className="flex justify-between">
-                    <h3 className="text-lg font-bold mb-2">{list.title}</h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold">{list.title}</h3>
+                    <button
+                      className="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 text-xl"
+                      onClick={() => handleDeleteList(list.list_id)}
+                      aria-label={`Delete list ${list.title}`}
+                      title="Delete list"
+                    >
+                      ×
+                    </button>
                   </div>
                   <SortableContext
                     items={cardsForList.map((card) => card.card_id)}
