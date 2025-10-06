@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabaseClient } from "@/lib/supabaseClient"
 import type { List } from "@/types"
 import CreatableSelect from "react-select/creatable"
+import { fetchLists } from "@/utils/helpers"
 
 interface Props {
   boardId: number
@@ -24,15 +25,11 @@ export default function AddCardForm({ boardId, onSuccess }: Props) {
   const [selectedOption, setSelectedOption] = useState<ListOption | null>(null)
 
   useEffect(() => {
-    fetchLists()
+    handleLists()
   }, [boardId])
 
-  async function fetchLists() {
-    const { data } = await supabaseClient
-      .from("lists")
-      .select("*")
-      .eq("board_id", boardId)
-      .order("position")
+  async function handleLists() {
+    const data = await fetchLists(boardId)
     setLists(data || [])
   }
 
