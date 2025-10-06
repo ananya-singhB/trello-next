@@ -357,9 +357,13 @@ export default function BoardContent({
   }
 
   async function handleDeleteList(listId: number) {
+    const hasCards = cards.some((c) => c.list_id === listId)
+
     if (
       !confirm(
-        "Are you sure you want to delete this list? All cards under it will be deleted too."
+        `Are you sure you want to delete this list?${
+          hasCards ? " All cards under it will be deleted too." : ""
+        }`
       )
     ) {
       return
@@ -435,7 +439,7 @@ export default function BoardContent({
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-bold">{list.title}</h3>
                     <button
-                      className="text-red-500 hover:text-red-700 font-bold px-2 py-0.5"
+                      className="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 text-xl"
                       onClick={() => handleDeleteList(list.list_id)}
                       aria-label={`Delete list ${list.title}`}
                       title="Delete list"
