@@ -50,7 +50,7 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-lg font-semibold">Add New List</h3>
+      <h3 className="text-lg font-semibold">Create New List</h3>
       <input
         type="text"
         placeholder="List title"
