@@ -431,7 +431,7 @@ export default function BoardContent({ selectedBoardId }: BoardContentProps) {
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-bold">{list.title}</h3>
                     <button
-                      className="text-red-500 hover:text-red-700 font-bold px-2 py-0.5 text-xl"
+                      className="text-red-500 hover:text-red-700 font-bold px-2 text-xl hover:bg-gray-200 rounded"
                       onClick={() => handleDeleteList(list.list_id)}
                       aria-label={`Delete list ${list.title}`}
                       title="Delete list"
