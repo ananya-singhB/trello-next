@@ -20,10 +20,10 @@ import DraggableCard from "./DraggableCard"
 import Modal from "./Modal"
 import AddListForm from "./AddListForm"
 import AddCardForm from "./AddCardForm"
+import { fetchLists } from "@/utils/helpers"
 
 interface BoardContentProps {
   selectedBoardId: number
-  boards: Board[]
 }
 
 function EditCardModal({
@@ -61,7 +61,7 @@ function EditCardModal({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full border px-3 py-2 rounded"
-          placeholder="Card Title"
+          placeholder="Enter Card Title"
           required
         />
         <textarea
@@ -145,10 +145,7 @@ function EmptyListPlaceholder({ listId }: { listId: number }) {
   )
 }
 
-export default function BoardContent({
-  selectedBoardId,
-  boards,
-}: BoardContentProps) {
+export default function BoardContent({ selectedBoardId }: BoardContentProps) {
   const [lists, setLists] = useState<List[]>([])
   const [cards, setCards] = useState<Card[]>([])
 
@@ -156,23 +153,18 @@ export default function BoardContent({
   const [showEditModal, setShowEditModal] = useState(false)
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
-  const [cardModalListId, setCardModalListId] = useState<number | null>(null)
   const [activeCardId, setActiveCardId] = useState<number | null>(null)
   const [editingCardId, setEditingCardId] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchLists(selectedBoardId)
+  async function handleFetchData() {
+    const lists = await fetchLists(selectedBoardId)
+    setLists(lists)
     fetchCards(selectedBoardId)
-  }, [selectedBoardId])
-
-  async function fetchLists(boardId: number) {
-    const { data } = await supabaseClient
-      .from("lists")
-      .select("*")
-      .eq("board_id", boardId)
-      .order("position")
-    setLists(data || [])
   }
+
+  useEffect(() => {
+    handleFetchData()
+  }, [selectedBoardId])
 
   async function fetchCards(boardId: number) {
     const { data } = await supabaseClient

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { supabaseClient } from "@/lib/supabaseClient"
+import { fetchLists } from "@/utils/helpers"
 
 interface Props {
   boardId: number
@@ -12,15 +13,6 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
   const [title, setTitle] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function fetchLists(boardId: number) {
-    const { data } = await supabaseClient
-      .from("lists")
-      .select("*")
-      .eq("board_id", boardId)
-      .order("position")
-    return { data }
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     try {
       e.preventDefault()
@@ -28,9 +20,9 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
       setLoading(true)
 
       // Position is count of existing lists
-      const { data: existingLists = [] } = await fetchLists(boardId)
+      const data = await fetchLists(boardId)
 
-      const nextPosition = existingLists?.length || 0
+      const nextPosition = data?.length || 0
 
       const { error } = await supabaseClient
         .from("lists")
@@ -53,7 +45,7 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
       <h3 className="text-lg font-semibold">Create New List</h3>
       <input
         type="text"
-        placeholder="List title"
+        placeholder="Enter List Title"
         className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={title}
         onChange={(e) => setTitle(e.target.value)}

@@ -21,7 +21,6 @@ export default function Boards({ selectedBoardId, boards }: { selectedBoardId: n
       <BoardContent
         key={`board-${selectedBoardId}`}
         selectedBoardId={selectedBoardId}
-        boards={boards}
       />
     </Suspense>
   );
