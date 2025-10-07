@@ -39,6 +39,22 @@ export default function BoardsPage() {
     fetchBoards()
   }
 
+  async function updateBoardTitle(id: number, title: string) {
+    const trimmed = title.trim()
+    if (trimmed.length < 3) {
+      throw new Error("Board name must be at least 3 characters.")
+    }
+
+    const { error } = await supabaseClient
+      .from("boards")
+      .update({ title: trimmed })
+      .eq("board_id", id)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 w-full">
       <div
@@ -54,6 +70,10 @@ export default function BoardsPage() {
           onDeleteBoard={deleteBoard}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
+          onUpdateBoardTitle={async (id, title) => {
+            await updateBoardTitle(id, title)
+            await fetchBoards()
+          }}
         />
       </div>
       <main className="flex-1 overflow-auto flex flex-col">
