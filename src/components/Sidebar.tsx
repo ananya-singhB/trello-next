@@ -13,6 +13,7 @@ interface Props {
   onDeleteBoard: (id: number) => void
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  onUpdateBoardTitle: (id: number, title: string) => Promise<void>
 }
 
 export default function Sidebar({
@@ -23,10 +24,15 @@ export default function Sidebar({
   onDeleteBoard,
   sidebarOpen,
   setSidebarOpen,
+  onUpdateBoardTitle,
 }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [boardToDelete, setBoardToDelete] = useState<number | null>(null)
+
+  const [editingBoardId, setEditingBoardId] = useState<number | null>(null)
+  const [editTitle, setEditTitle] = useState<string>("")
+  const [saving, setSaving] = useState(false)
 
   function handleDelete(board_id: number) {
     setBoardToDelete(board_id)
@@ -41,7 +47,34 @@ export default function Sidebar({
     }
   }
 
-  console.log("boards in sidebar", boards)
+  function startEdit(board: Board) {
+    if (editingBoardId && editingBoardId !== board.board_id) return
+    setEditingBoardId(board.board_id)
+    setEditTitle(board.title)
+  }
+
+  function cancelEdit() {
+    setEditingBoardId(null)
+    setEditTitle("")
+    setSaving(false)
+  }
+
+  async function handleSave(boardId: number) {
+    const title = editTitle.trim()
+    if (title.length < 3) {
+      alert("Board name must be at least 3 characters.")
+      return
+    }
+    setSaving(true)
+    try {
+      await onUpdateBoardTitle(boardId, title)
+      onBoardsChange()
+      cancelEdit()
+    } catch (err: any) {
+      alert(err?.message || "Failed to update board title.")
+      setSaving(false)
+    }
+  }
 
   if (!sidebarOpen) {
     return (
@@ -75,7 +108,7 @@ export default function Sidebar({
           className="flex items-center gap-2 hover:bg-gray-200 py-0.5 px-1.5 rounded mr-2"
           onClick={() => setShowModal(true)}
         >
-          <h2 className="text-lg font-semibold cursor-pointer"> Create Board</h2>
+          <h2 className="text-lg font-semibold cursor-pointer">Create Board</h2>
           <button
             onClick={() => setShowModal(true)}
             aria-label="Create Board"
@@ -85,34 +118,100 @@ export default function Sidebar({
           </button>
         </div>
       </div>
+
       <nav className="flex-1 overflow-y-auto justify-center">
         {boards.length === 0 ? (
           <p className="text-gray-500 mt-2">No boards created</p>
         ) : (
-          boards.map((board) => (
-            <div
-              key={board.board_id}
-              className={`flex items-center justify-between px-4 py-2 ${
-                selectedBoardId === board.board_id
-                  ? "bg-blue-500 text-white border-r border-blue-500!"
-                  : "hover:bg-blue-100 hover:text-black! odd:bg-white even:bg-gray-200"
-              }`}
-            >
-              <span
-                onClick={() => onSelect(board.board_id)}
-                className="cursor-pointer flex-1 font-bold"
+          boards.map((board) => {
+            const isActive = selectedBoardId === board.board_id
+            const isEditing = editingBoardId === board.board_id
+
+            return (
+              <div
+                key={board.board_id}
+                className={`flex items-center justify-between px-4 py-2 ${
+                  isActive
+                    ? "bg-black text-white border-r border-blue-500!"
+                    : "hover:bg-blue-100 hover:text-black! odd:bg-white even:bg-gray-200"
+                }`}
               >
-                {board.title}
-              </span>
-              <button
-                onClick={() => handleDelete(board.board_id)}
-                className="ml-2 font-bold text-white bg-red-600 px-1.5 rounded hover:text-red-700"
-                aria-label="Delete board"
-              >
-                &#10005;
-              </button>
-            </div>
-          ))
+                <div className="flex items-center gap-2 flex-1">
+                  {!isEditing ? (
+                    <span
+                      onClick={() => onSelect(board.board_id)}
+                      className="cursor-pointer flex-1 font-bold"
+                    >
+                      {board.title}
+                    </span>
+                  ) : (
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className={`flex-1 px-2 py-1 rounded border-0 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-white ${
+                        isActive ? "text-black" : ""
+                      }`}
+                      disabled={saving}
+                      placeholder="Board name"
+                    />
+                  )}
+
+                  {!isEditing && (
+                    <button
+                      onClick={() => startEdit(board)}
+                      className={`px-1.5 rounded hover:bg-gray-300 ${
+                        isActive
+                          ? "text-white hover:text-black"
+                          : "text-gray-700"
+                      } -scale-x-100 inline-block`}
+                      aria-label="Edit board name"
+                      title="Edit"
+                    >
+                      ✎
+                    </button>
+                  )}
+
+                  {isEditing && (
+                    <>
+                      <button
+                        onClick={() => handleSave(board.board_id)}
+                        disabled={saving}
+                        className={`px-1.5 rounded hover:bg-green-100 text-green-700 disabled:opacity-50`}
+                        aria-label="Save board name"
+                        title="Save"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        disabled={saving}
+                        className="px-1.5 rounded hover:bg-red-100 text-red-600 disabled:opacity-50"
+                        aria-label="Cancel editing"
+                        title="Cancel"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
+
+                  {!isEditing && (
+                    <button
+                      onClick={() => handleDelete(board.board_id)}
+                      className={`ml-1 font-bold px-1.5 rounded ${
+                        isActive
+                          ? "text-white hover:text-white hover:bg-red-700"
+                          : "text-red-600 hover:bg-red-100"
+                      }`}
+                      aria-label="Delete board"
+                      title="Delete"
+                    >
+                      &#10005;
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })
         )}
       </nav>
 
