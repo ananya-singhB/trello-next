@@ -1,6 +1,5 @@
 import { supabaseClient } from "@/lib/supabaseClient"
-import { Card, List } from "@/types"
-import { fetchCards } from "@/utils/helpers"
+import { Card } from "@/types"
 import {
   DndContext,
   closestCenter,
@@ -16,30 +15,23 @@ import {
 } from "@dnd-kit/sortable"
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react"
 import DraggableCard from "./DraggableCard"
+import { useBoardStore } from "@/store/useBoardStore"
 
 const DragDrop = ({
-  selectedBoardId,
   editingCardId,
   setEditingCardId,
-  lists,
-  handleFetchLists,
-  cards,
-  handleFetchCards,
   handleSetCards,
 }: {
-  selectedBoardId: number
-  editingCardId: number | null
-  setEditingCardId: Dispatch<SetStateAction<number | null>>
-  lists: List[]
-  handleFetchLists: () => void
-  cards: Card[]
-  handleFetchCards: () => void
+  editingCardId: string | null
+  setEditingCardId: Dispatch<SetStateAction<string | null>>
   handleSetCards: (_: Card[]) => void
 }) => {
-  const [activeCardId, setActiveCardId] = useState<number | null>(null)
+  const [activeCardId, setActiveCardId] = useState<string | null>(null)
+
+  const { lists, cards, updateCard, deleteList } = useBoardStore()
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveCardId(event.active.id as number)
+    setActiveCardId(event.active.id as string)
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -51,7 +43,7 @@ const DragDrop = ({
     if (!activeCard) return
 
     if (typeof over.id === "string" && over.id.startsWith("list-")) {
-      const listId = Number(over.id.replace("list-", ""))
+      const listId = over.id.replace("list-", "")
       if (activeCard.list_id === listId) return
       const updatedCardsExcludingActive = cards.filter(
         (c) => c.card_id !== activeCard.card_id
@@ -77,7 +69,7 @@ const DragDrop = ({
     }
 
     if (typeof over.id === "string" && over.id.startsWith("card-end-")) {
-      const listId = Number(over.id.replace("card-end-", ""))
+      const listId = over.id.replace("card-end-", "")
       const updatedCardsExcludingActive = cards.filter(
         (c) => c.card_id !== activeCard.card_id
       )
@@ -162,43 +154,6 @@ const DragDrop = ({
     }
   }
 
-  async function handleDeleteList(listId: number) {
-    const hasCards = cards.some((c) => c.list_id === listId)
-
-    if (
-      !confirm(
-        `Are you sure you want to delete this list?${
-          hasCards ? " All cards under it will be deleted too." : ""
-        }`
-      )
-    ) {
-      return
-    }
-
-    const { error: delCardsError } = await supabaseClient
-      .from("cards")
-      .delete()
-      .eq("list_id", listId)
-
-    if (delCardsError) {
-      alert("Error deleting cards in list: " + delCardsError.message)
-      return
-    }
-
-    const { error: delListError } = await supabaseClient
-      .from("lists")
-      .delete()
-      .eq("list_id", listId)
-
-    if (delListError) {
-      alert("Error deleting list: " + delListError.message)
-      return
-    }
-
-    handleFetchLists()
-    handleFetchCards()
-  }
-
   function handleEditStart(card: Card) {
     if (editingCardId === null) {
       setEditingCardId(card.card_id)
@@ -214,23 +169,18 @@ const DragDrop = ({
   }
 
   async function handleEditSave(
-    cardId: number,
+    cardId: string,
     title: string,
     description: string
   ) {
-    await supabaseClient
-      .from("cards")
-      .update({ title, description })
-      .eq("card_id", cardId)
-    handleEditCancel()
-    await fetchCards(selectedBoardId)
+    updateCard(cardId, title, description)
   }
 
   function DroppableListArea({
     id,
     children,
   }: {
-    id: number
+    id: string
     children: React.ReactNode
   }) {
     const { isOver, setNodeRef } = useDroppable({ id: `list-${id}` })
@@ -246,7 +196,7 @@ const DragDrop = ({
     )
   }
 
-  function DropEndPlaceholder({ listId }: { listId: number }) {
+  function DropEndPlaceholder({ listId }: { listId: string }) {
     const { setNodeRef, isOver } = useDroppable({ id: `card-end-${listId}` })
     return (
       <li
@@ -263,7 +213,7 @@ const DragDrop = ({
     )
   }
 
-  function EmptyListPlaceholder({ listId }: { listId: number }) {
+  function EmptyListPlaceholder({ listId }: { listId: string }) {
     const { setNodeRef, isOver } = useDroppable({ id: `list-${listId}` })
     return (
       <li
@@ -302,7 +252,7 @@ const DragDrop = ({
                   <h3 className="text-lg font-bold">{list.title}</h3>
                   <button
                     className="text-red-500 hover:text-red-700 font-bold px-2 text-xl hover:bg-gray-200 rounded"
-                    onClick={() => handleDeleteList(list.list_id)}
+                    onClick={() => deleteList(list.list_id)}
                     aria-label={`Delete list ${list.title}`}
                     title="Delete list"
                   >

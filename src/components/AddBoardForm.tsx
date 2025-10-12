@@ -1,29 +1,31 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { useState } from "react"
+import { useBoardStore } from "@/store/useBoardStore"
 
 interface Props {
   onSuccess: () => void;
 }
 
 export default function AddBoardForm({ onSuccess }: Props) {
-  const [title, setTitle] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState("")
+  const [loading, setLoading] = useState(false)
+  const addBoard = useBoardStore((state) => state.addBoard)
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title) return;
-    setLoading(true);
+    e.preventDefault()
+    if (!title.trim()) return
 
-    const { error } = await supabaseClient.from('boards').insert([{ title }]);
-    if (error) {
-      alert(error.message);
-    } else {
-      onSuccess();
+    setLoading(true)
+    try {
+      await addBoard(title.trim())
+      setTitle("")
+      onSuccess()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false);
-    setTitle('');
   }
 
   return (

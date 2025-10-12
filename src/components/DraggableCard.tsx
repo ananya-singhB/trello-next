@@ -8,9 +8,9 @@ import type { Card } from "@/types"
 interface DraggableCardProps {
   card: Card
   dragOverlay?: boolean
-  editingCardId?: number | null
+  editingCardId?: string | null
   onEditStart?: (card: Card) => void
-  onEditSave?: (cardId: number, title: string, description: string) => void
+  onEditSave?: (cardId: string, title: string, description: string) => void
   onEditCancel?: () => void
 }
 
