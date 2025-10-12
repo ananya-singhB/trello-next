@@ -3,45 +3,38 @@
 import { useState } from "react"
 import Modal from "./Modal"
 import AddBoardForm from "./AddBoardForm"
-import type { Board } from "@/types"
+import { useBoardStore } from "@/store/useBoardStore"
+import { Board } from "@/types"
 
 interface Props {
-  boards: Board[]
-  selectedBoardId: number | null
-  onSelect: (id: number) => void
-  onBoardsChange: () => void
-  onDeleteBoard: (id: number) => void
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
-  onUpdateBoardTitle: (id: number, title: string) => Promise<void>
 }
 
-export default function Sidebar({
-  boards,
-  selectedBoardId,
-  onSelect,
-  onBoardsChange,
-  onDeleteBoard,
-  sidebarOpen,
-  setSidebarOpen,
-  onUpdateBoardTitle,
-}: Props) {
+export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [boardToDelete, setBoardToDelete] = useState<number | null>(null)
-
-  const [editingBoardId, setEditingBoardId] = useState<number | null>(null)
-  const [editTitle, setEditTitle] = useState<string>("")
+  const [boardToDelete, setBoardToDelete] = useState<string | null>(null)
+  const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState("")
   const [saving, setSaving] = useState(false)
 
-  function handleDelete(board_id: number) {
+  const {
+    boards,
+    selectedBoardId,
+    setSelectedBoardId,
+    deleteBoard,
+    updateBoard,
+  } = useBoardStore()
+
+  function handleDelete(board_id: string) {
     setBoardToDelete(board_id)
     setShowDeleteModal(true)
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (boardToDelete !== null) {
-      onDeleteBoard(boardToDelete)
+      await deleteBoard(boardToDelete)
       setShowDeleteModal(false)
       setBoardToDelete(null)
     }
@@ -59,7 +52,7 @@ export default function Sidebar({
     setSaving(false)
   }
 
-  async function handleSave(boardId: number) {
+  async function handleSave(boardId: string) {
     const title = editTitle.trim()
     if (title.length < 3) {
       alert("Board name must be at least 3 characters.")
@@ -67,8 +60,7 @@ export default function Sidebar({
     }
     setSaving(true)
     try {
-      await onUpdateBoardTitle(boardId, title)
-      onBoardsChange()
+      await updateBoard(boardId, title)
       cancelEdit()
     } catch (err: any) {
       alert(err?.message || "Failed to update board title.")
@@ -105,10 +97,10 @@ export default function Sidebar({
           </button>
         </div>
         <div
-          className="flex items-center gap-2 hover:bg-gray-200 py-0.5 px-1.5 rounded mr-2"
+          className="flex items-center gap-2 hover:bg-gray-200 py-0.5 px-1.5 rounded mr-2 cursor-pointer"
           onClick={() => setShowModal(true)}
         >
-          <h2 className="text-lg font-semibold cursor-pointer">Create Board</h2>
+          <h2 className="text-lg font-semibold">Create Board</h2>
           <button
             onClick={() => setShowModal(true)}
             aria-label="Create Board"
@@ -121,7 +113,7 @@ export default function Sidebar({
 
       <nav className="flex-1 overflow-y-auto justify-center">
         {boards.length === 0 ? (
-          <p className="text-gray-500 mt-2">No boards created</p>
+          <p className="text-gray-500 mt-2 px-4">No boards created</p>
         ) : (
           boards.map((board) => {
             const isActive = selectedBoardId === board.board_id
@@ -139,7 +131,7 @@ export default function Sidebar({
                 <div className="flex items-center gap-2 flex-1">
                   {!isEditing ? (
                     <span
-                      onClick={() => onSelect(board.board_id)}
+                      onClick={() => setSelectedBoardId(board.board_id)}
                       className="cursor-pointer flex-1 font-bold"
                     >
                       {board.title}
@@ -176,7 +168,7 @@ export default function Sidebar({
                       <button
                         onClick={() => handleSave(board.board_id)}
                         disabled={saving}
-                        className={`px-1.5 rounded hover:bg-green-100 text-green-700 disabled:opacity-50`}
+                        className="px-1.5 rounded hover:bg-green-100 text-green-700 disabled:opacity-50"
                         aria-label="Save board name"
                         title="Save"
                       >
@@ -193,22 +185,22 @@ export default function Sidebar({
                       </button>
                     </>
                   )}
-
-                  {!isEditing && (
-                    <button
-                      onClick={() => handleDelete(board.board_id)}
-                      className={`ml-1 font-bold px-1.5 rounded ${
-                        isActive
-                          ? "text-white hover:text-white hover:bg-red-700"
-                          : "text-red-600 hover:bg-red-100"
-                      }`}
-                      aria-label="Delete board"
-                      title="Delete"
-                    >
-                      &#10005;
-                    </button>
-                  )}
                 </div>
+
+                {!isEditing && (
+                  <button
+                    onClick={() => handleDelete(board.board_id)}
+                    className={`font-bold px-1.5 rounded ml-2 ${
+                      isActive
+                        ? "text-white bg-red-600 hover:bg-red-700"
+                        : "text-red-600 hover:bg-red-100"
+                    }`}
+                    aria-label="Delete board"
+                    title="Delete"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             )
           })
@@ -216,12 +208,7 @@ export default function Sidebar({
       </nav>
 
       <Modal open={showModal} onClose={() => setShowModal(false)}>
-        <AddBoardForm
-          onSuccess={() => {
-            onBoardsChange()
-            setShowModal(false)
-          }}
-        />
+        <AddBoardForm onSuccess={() => setShowModal(false)} />
       </Modal>
 
       <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)}>

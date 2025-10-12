@@ -1,59 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabaseClient"
-import type { Board } from "@/types"
 import Sidebar from "@/components/Sidebar"
-
-import dynamic from "next/dynamic"
 
 import { useRouter } from "next/navigation"
 import Boards from "@/components/Boards"
+import { useBoardStore } from "@/store/useBoardStore"
 
 export default function BoardsPage() {
   const router = useRouter()
-  const [boards, setBoards] = useState<Board[]>([])
-  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null)
+  const { boards, fetchBoards, selectedBoardId } = useBoardStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     fetchBoards()
   }, [])
-
-  async function fetchBoards() {
-    const { data } = await supabaseClient
-      .from("boards")
-      .select("*")
-      .order("created_at")
-    setBoards(data || [])
-    if (data && data.length > 0) {
-      setSelectedBoardId(data[0].board_id)
-    }
-  }
-
-  async function deleteBoard(boardId: number) {
-    await supabaseClient.from("boards").delete().eq("board_id", boardId)
-    if (selectedBoardId === boardId) {
-      setSelectedBoardId(null)
-    }
-    fetchBoards()
-  }
-
-  async function updateBoardTitle(id: number, title: string) {
-    const trimmed = title.trim()
-    if (trimmed.length < 3) {
-      throw new Error("Board name must be at least 3 characters.")
-    }
-
-    const { error } = await supabaseClient
-      .from("boards")
-      .update({ title: trimmed })
-      .eq("board_id", id)
-
-    if (error) {
-      throw new Error(error.message)
-    }
-  }
 
   return (
     <div className="flex h-screen bg-gray-50 w-full">
@@ -62,19 +23,7 @@ export default function BoardsPage() {
           sidebarOpen ? "w-64" : "w-20"
         } bg-white shadow h-full overflow-y-auto`}
       >
-        <Sidebar
-          boards={boards}
-          selectedBoardId={selectedBoardId}
-          onSelect={(id) => setSelectedBoardId(id)}
-          onBoardsChange={fetchBoards}
-          onDeleteBoard={deleteBoard}
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          onUpdateBoardTitle={async (id, title) => {
-            await updateBoardTitle(id, title)
-            await fetchBoards()
-          }}
-        />
+        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       </div>
       <main className="flex-1 overflow-auto flex flex-col">
         <header className="flex justify-between p-4 bg-white shadow sticky top-0 z-10 text-center align-middle">
@@ -102,7 +51,7 @@ export default function BoardsPage() {
             </svg>
           </button>
         </header>
-        <Boards selectedBoardId={selectedBoardId} boards={boards} />
+        <Boards />
       </main>
     </div>
   )

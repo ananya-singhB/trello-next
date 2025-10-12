@@ -1,42 +1,30 @@
 "use client"
 
 import { useState } from "react"
-import { supabaseClient } from "@/lib/supabaseClient"
-import { fetchLists } from "@/utils/helpers"
+import { useBoardStore } from "@/store/useBoardStore"
 
 interface Props {
-  boardId: number
   onSuccess: () => void
 }
 
-export default function AddListForm({ boardId, onSuccess }: Props) {
+export default function AddListForm({ onSuccess }: Props) {
   const [title, setTitle] = useState("")
   const [loading, setLoading] = useState(false)
+  const { selectedBoardId, addList } = useBoardStore()
 
   async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
+
+    setLoading(true)
     try {
-      e.preventDefault()
-      if (!title) return
-      setLoading(true)
-
-      // Position is count of existing lists
-      const data = await fetchLists(boardId)
-
-      const nextPosition = data?.length || 0
-
-      const { error } = await supabaseClient
-        .from("lists")
-        .insert([{ title, board_id: boardId, position: nextPosition }])
-      if (error) {
-        alert(error.message)
-      } else {
-        onSuccess()
-      }
+      await addList(selectedBoardId || "", title.trim())
+      setTitle("")
+      onSuccess()
     } catch (error) {
-      console.log(error)
+      console.error(error)
     } finally {
       setLoading(false)
-      setTitle("")
     }
   }
 
@@ -52,15 +40,13 @@ export default function AddListForm({ boardId, onSuccess }: Props) {
         disabled={loading}
         required
       />
-      <div className="flex justify-start gap-2">
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          Save
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+      >
+        {loading ? "Saving..." : "Save"}
+      </button>
     </form>
   )
 }

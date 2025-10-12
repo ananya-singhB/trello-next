@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabaseClient"
+import { useBoardStore } from "@/store/useBoardStore"
 import type { List } from "@/types"
 import CreatableSelect from "react-select/creatable"
-import { fetchLists } from "@/utils/helpers"
 
 interface Props {
-  boardId: number
   onSuccess: () => void
+  onClose: () => void
 }
 
 interface ListOption {
@@ -17,34 +16,31 @@ interface ListOption {
   __isNew__?: boolean
 }
 
-export default function AddCardForm({ boardId, onSuccess }: Props) {
+export default function AddCardForm({ onSuccess, onClose }: Props) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
-  const [lists, setLists] = useState<List[]>([])
   const [selectedOption, setSelectedOption] = useState<ListOption | null>(null)
 
-  useEffect(() => {
-    handleLists()
-  }, [boardId])
+  const { lists, selectedBoardId, addCard, addList } = useBoardStore()
 
-  async function handleLists() {
-    const data = await fetchLists(boardId)
-    setLists(data || [])
-  }
+  const listOptions: ListOption[] = lists
+    .filter((list) => list.board_id === selectedBoardId)
+    .map((list) => ({
+      label: list.title,
+      value: list.list_id.toString(),
+    }))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!title.trim()) return
-    if (!selectedOption) {
-      alert("Please select or create a list")
+    if (!title.trim() || !selectedOption) {
+      alert("Please enter a title and select or create a list")
       return
     }
 
     setLoading(true)
-
     try {
-      let listId: number | null = null
+      let listId: string
 
       if (selectedOption.__isNew__) {
         const trimmedLabel = selectedOption.label.trim()
@@ -53,54 +49,31 @@ export default function AddCardForm({ boardId, onSuccess }: Props) {
           setLoading(false)
           return
         }
-        const { data: newListData, error: newListError } = await supabaseClient
-          .from("lists")
-          .insert([
-            {
-              title: trimmedLabel,
-              board_id: boardId,
-              position: lists.length,
-            },
-          ])
-          .select()
-          .single()
-        if (newListError || !newListData) {
-          alert(newListError?.message || "Failed to create new list")
+        const newList = await addList(selectedBoardId || "", trimmedLabel)
+
+        if (!newList) {
+          alert("Failed to create list. Please try again.")
           setLoading(false)
           return
         }
-        listId = newListData.list_id
+
+        listId = newList.list_id
       } else {
-        listId = parseInt(selectedOption.value)
+        listId = selectedOption.value
       }
 
-      const { data: cardsInList } = await supabaseClient
-        .from("cards")
-        .select("*")
-        .eq("board_id", boardId)
-        .eq("list_id", listId)
-        .order("position")
+      await addCard(
+        listId,
+        selectedBoardId || "",
+        title.trim(),
+        description.trim()
+      )
 
-      const nextPosition = cardsInList?.length || 0
-
-      const { error } = await supabaseClient.from("cards").insert([
-        {
-          title: title.trim(),
-          description: description.trim() || null,
-          list_id: listId,
-          board_id: boardId,
-          position: nextPosition,
-        },
-      ])
-
-      if (error) {
-        alert(error.message)
-      } else {
-        setTitle("")
-        setDescription("")
-        setSelectedOption(null)
-        onSuccess()
-      }
+      setTitle("")
+      setDescription("")
+      setSelectedOption(null)
+      onSuccess()
+      onClose()
     } catch (error) {
       console.error(error)
     } finally {
@@ -108,14 +81,9 @@ export default function AddCardForm({ boardId, onSuccess }: Props) {
     }
   }
 
-  const listOptions: ListOption[] = lists.map((list) => ({
-    label: list.title,
-    value: list.list_id.toString(),
-  }))
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-lg font-semibold">Create New Card</h3>
+      <h3 className="text-lg font-semibold">Add New Card</h3>
 
       <input
         type="text"
@@ -153,7 +121,7 @@ export default function AddCardForm({ boardId, onSuccess }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
       >
         {loading ? "Saving..." : "Save"}
       </button>

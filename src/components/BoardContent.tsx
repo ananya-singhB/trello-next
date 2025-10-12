@@ -1,17 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { supabaseClient } from "@/lib/supabaseClient"
-import type { List, Card, Board } from "@/types"
+import { useState } from "react"
+import type { Card } from "@/types"
 import Modal from "./Modal"
 import AddListForm from "./AddListForm"
 import AddCardForm from "./AddCardForm"
-import { fetchCards, fetchLists } from "@/utils/helpers"
 import DragDrop from "./DragDrop"
-
-interface BoardContentProps {
-  selectedBoardId: number
-}
+import { useBoardStore } from "@/store/useBoardStore"
 
 function EditCardModal({
   card,
@@ -27,10 +22,10 @@ function EditCardModal({
   const [title, setTitle] = useState(card?.title ?? "")
   const [description, setDescription] = useState(card?.description ?? "")
 
-  useEffect(() => {
+  useState(() => {
     setTitle(card?.title ?? "")
     setDescription(card?.description ?? "")
-  }, [card])
+  })
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -78,30 +73,14 @@ function EditCardModal({
   )
 }
 
-export default function BoardContent({ selectedBoardId }: BoardContentProps) {
-  const [lists, setLists] = useState<List[]>([])
-  const [cards, setCards] = useState<Card[]>([])
+export default function BoardContent() {
+  const { lists, selectedBoardId, updateCard, setCards } = useBoardStore()
 
   const [editCard, setEditCard] = useState<Card | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
-  const [editingCardId, setEditingCardId] = useState<number | null>(null)
-
-  async function handleFetchLists() {
-    const listsData = await fetchLists(selectedBoardId)
-    setLists(listsData)
-  }
-
-  async function handleFetchCards() {
-    const listsData = await fetchCards(selectedBoardId)
-    setCards(listsData)
-  }
-
-  useEffect(() => {
-    handleFetchLists()
-    handleFetchCards()
-  }, [selectedBoardId])
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
 
   function handleSetCards(cardsData: Card[]) {
     setCards(cardsData)
@@ -120,10 +99,7 @@ export default function BoardContent({ selectedBoardId }: BoardContentProps) {
     title: string,
     description: string
   ) {
-    await supabaseClient
-      .from("cards")
-      .update({ title, description })
-      .eq("card_id", card.card_id)
+    await updateCard(card.card_id, title, description)
     setShowEditModal(false)
     setEditCard(null)
   }
@@ -160,32 +136,23 @@ export default function BoardContent({ selectedBoardId }: BoardContentProps) {
       </div>
 
       <DragDrop
-        selectedBoardId={selectedBoardId}
         editingCardId={editingCardId}
         setEditingCardId={setEditingCardId}
-        lists={lists}
-        handleFetchLists={handleFetchLists}
-        cards={cards}
-        handleFetchCards={handleFetchCards}
         handleSetCards={handleSetCards}
       />
       <Modal open={isListModalOpen} onClose={handleCloseListModal}>
         <AddListForm
-          boardId={selectedBoardId}
           onSuccess={() => {
-            fetchLists(selectedBoardId)
             handleCloseListModal()
           }}
         />
       </Modal>
       <Modal open={isCardModalOpen} onClose={handleCloseCardModal}>
         <AddCardForm
-          boardId={selectedBoardId}
           onSuccess={() => {
-            handleFetchLists()
-            handleFetchCards()
             setIsCardModalOpen(false)
           }}
+          onClose={handleCloseCardModal}
         />
       </Modal>
       <EditCardModal
