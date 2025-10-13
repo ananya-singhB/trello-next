@@ -22,11 +22,11 @@ const DragDrop = ({
   setEditingCardId,
   handleSetCards,
 }: {
-  editingCardId: string | null
-  setEditingCardId: Dispatch<SetStateAction<string | null>>
+  editingCardId: number | null
+  setEditingCardId: Dispatch<SetStateAction<number | null>>
   handleSetCards: (_: Card[]) => void
 }) => {
-  const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  const [activeCardId, setActiveCardId] = useState<number | null>(null)
 
   const { lists, cards, updateCard, deleteList } = useBoardStore()
 
@@ -43,8 +43,8 @@ const DragDrop = ({
     if (!activeCard) return
 
     if (typeof over.id === "string" && over.id.startsWith("list-")) {
-      const listId = over.id.replace("list-", "")
-      if (activeCard.list_id === listId) return
+      const listId = Number(over.id.replace("list-", ""))
+      if (activeCard.list_id === (listId as unknown as string)) return
       const updatedCardsExcludingActive = cards.filter(
         (c) => c.card_id !== activeCard.card_id
       )

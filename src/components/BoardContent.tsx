@@ -74,13 +74,13 @@ function EditCardModal({
 }
 
 export default function BoardContent() {
-  const { lists, selectedBoardId, updateCard, setCards } = useBoardStore()
+  const { lists, updateCard, setCards } = useBoardStore()
 
   const [editCard, setEditCard] = useState<Card | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [isListModalOpen, setIsListModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
-  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [editingCardId, setEditingCardId] = useState<number | null>(null)
 
   function handleSetCards(cardsData: Card[]) {
     setCards(cardsData)
