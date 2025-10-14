@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useBoardStore } from "@/store/useBoardStore"
-import type { List } from "@/types"
 import CreatableSelect from "react-select/creatable"
 
 interface Props {

@@ -2,38 +2,48 @@ import { create } from "zustand"
 import { devtools } from "zustand/middleware"
 import { supabaseClient } from "@/lib/supabaseClient"
 import type { Board, List, Card } from "@/types"
+import { User } from "@supabase/supabase-js"
 
 interface BoardStore {
+  user: User | null
+  userEmail: string | null
+  userLoading: boolean
+
   boards: Board[]
   lists: List[]
   cards: Card[]
-  selectedBoardId: string | null
+  selectedBoardId: number | null
   loading: boolean
   error: string | null
+  cardsVersion: number
+
+  fetchUser: () => Promise<void>
+  logout: () => Promise<void>
+  clearUser: () => void
 
   fetchBoards: () => Promise<void>
   addBoard: (title: string) => Promise<void>
-  updateBoard: (id: string, title: string) => Promise<void>
-  deleteBoard: (id: string) => Promise<void>
+  updateBoard: (id: number, title: string) => Promise<void>
+  deleteBoard: (id: number) => Promise<void>
 
-  setSelectedBoardId: (id: string | null) => void
+  setSelectedBoardId: (id: number | null) => void
 
-  fetchLists: (boardId: string) => Promise<void>
-  addList: (boardId: string, title: string) => Promise<List | null>
-  updateList: (id: string, title: string) => Promise<void>
-  deleteList: (id: string) => Promise<void>
+  fetchLists: (boardId: number) => Promise<void>
+  addList: (boardId: number, title: string) => Promise<List | null>
+  updateList: (id: number, title: string) => Promise<void>
+  deleteList: (id: number) => Promise<void>
 
-  fetchCards: (boardId: string) => Promise<void>
+  fetchCards: (boardId: number) => Promise<void>
   addCard: (
-    listId: string,
-    boardId: string,
+    listId: number,
+    boardId: number,
     title: string,
     description?: string
   ) => Promise<void>
-  updateCard: (id: string, title: string, description: string) => Promise<void>
-  deleteCard: (id: string) => Promise<void>
+  updateCard: (id: number, title: string, description: string) => Promise<void>
+  deleteCard: (id: number) => Promise<void>
   updateCardPositions: (
-    updates: Array<{ card_id: string; list_id: string; position: number }>
+    updates: Array<{ card_id: number; list_id: number; position: number }>
   ) => Promise<void>
 
   setCards: (cards: Card[]) => void
@@ -43,12 +53,70 @@ interface BoardStore {
 export const useBoardStore = create<BoardStore>()(
   devtools(
     (set, get) => ({
+      user: null,
+      userEmail: null,
+      userLoading: false,
+
       boards: [],
       lists: [],
       cards: [],
       selectedBoardId: null,
       loading: false,
       error: null,
+      cardsVersion: 0,
+
+      fetchUser: async () => {
+        set({ userLoading: true })
+        try {
+          const { data, error } = await supabaseClient.auth.getUser()
+
+          if (error) {
+            console.error("Error fetching user:", error)
+            set({ user: null, userEmail: null, userLoading: false })
+            throw error
+          }
+
+          console.log("user data", data)
+          set({
+            user: data.user,
+            userEmail: data.user?.email ?? null,
+            userLoading: false,
+          })
+        } catch (error: any) {
+          set({ error: error.message, userLoading: false })
+          throw error
+        }
+      },
+
+      logout: async () => {
+        try {
+          const { error } = await supabaseClient.auth.signOut()
+          if (error) throw error
+
+          set({
+            user: null,
+            userEmail: null,
+            boards: [],
+            lists: [],
+            cards: [],
+            selectedBoardId: null,
+          })
+        } catch (error: any) {
+          console.error("Logout error:", error)
+          set({ error: error.message })
+        }
+      },
+
+      clearUser: () => {
+        set({
+          user: null,
+          userEmail: null,
+          boards: [],
+          lists: [],
+          cards: [],
+          selectedBoardId: null,
+        })
+      },
 
       fetchBoards: async () => {
         set({ loading: true, error: null })
@@ -99,7 +167,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      updateBoard: async (id: string, title: string) => {
+      updateBoard: async (id: number, title: string) => {
         try {
           const { error } = await supabaseClient
             .from("boards")
@@ -118,7 +186,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      deleteBoard: async (id: string) => {
+      deleteBoard: async (id: number) => {
         try {
           // Delete cards and lists inside board first and then the board
           await supabaseClient.from("cards").delete().eq("board_id", id)
@@ -142,7 +210,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      setSelectedBoardId: (id: string | null) => {
+      setSelectedBoardId: (id: number | null) => {
         set({ selectedBoardId: id })
         if (id) {
           get().fetchLists(id)
@@ -152,7 +220,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      fetchLists: async (boardId: string) => {
+      fetchLists: async (boardId: number) => {
         try {
           const { data, error } = await supabaseClient
             .from("lists")
@@ -167,7 +235,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      addList: async (boardId: string, title: string) => {
+      addList: async (boardId: number, title: string) => {
         try {
           const { lists } = get()
           const position = lists.filter((l) => l.board_id === boardId).length
@@ -189,7 +257,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      updateList: async (id: string, title: string) => {
+      updateList: async (id: number, title: string) => {
         try {
           const { error } = await supabaseClient
             .from("lists")
@@ -208,7 +276,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      deleteList: async (id: string) => {
+      deleteList: async (id: number) => {
         try {
           const { count } = await supabaseClient
             .from("cards")
@@ -247,7 +315,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      fetchCards: async (boardId: string) => {
+      fetchCards: async (boardId: number) => {
         try {
           const { data, error } = await supabaseClient
             .from("cards")
@@ -263,8 +331,8 @@ export const useBoardStore = create<BoardStore>()(
       },
 
       addCard: async (
-        listId: string,
-        boardId: string,
+        listId: number,
+        boardId: number,
         title: string,
         description?: string
       ) => {
@@ -295,7 +363,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      updateCard: async (id: string, title: string, description: string) => {
+      updateCard: async (id: number, title: string, description: string) => {
         try {
           const { error } = await supabaseClient
             .from("cards")
@@ -314,7 +382,7 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      deleteCard: async (id: string) => {
+      deleteCard: async (id: number) => {
         try {
           const { error } = await supabaseClient
             .from("cards")
@@ -331,22 +399,48 @@ export const useBoardStore = create<BoardStore>()(
         }
       },
 
-      updateCardPositions: async (
-        updates: Array<{ card_id: string; list_id: string; position: number }>
-      ) => {
+      updateCardPositions: async (updates) => {
         try {
-          // Batch update all cards
+          set((state) => {
+            const updateMap = new Map(
+              updates.map((u) => [
+                u.card_id,
+                { list_id: u.list_id, position: u.position },
+              ])
+            )
+
+            const updatedCards = state.cards.map((card) => {
+              const update = updateMap.get(card.card_id)
+              if (update) {
+                return {
+                  ...card,
+                  list_id: update.list_id,
+                  position: update.position,
+                }
+              }
+              return card
+            })
+
+            return {
+              cards: updatedCards,
+              cardsVersion: state.cardsVersion + 1,
+            }
+          })
+
           for (const update of updates) {
             await supabaseClient
               .from("cards")
-              .update({ position: update.position, list_id: update.list_id })
-              .eq("card_id", update.card_id)
+              .update({
+                position: update.position,
+                list_id: Number(update.list_id),
+              })
+              .eq("card_id", Number(update.card_id))
           }
         } catch (error: any) {
+          console.error("Update card positions error:", error)
           set({ error: error.message })
         }
       },
-
       setCards: (cards: Card[]) => set({ cards }),
       setLists: (lists: List[]) => set({ lists }),
     }),
